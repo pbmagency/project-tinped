@@ -248,6 +248,7 @@ Route::get('delete-user', function () {
 Route::controller(ApiController::class)->group(function () {
     Route::post('profile', 'profile')->name('profile');
     Route::post('services', 'services')->name('services');
+    Route::post('services2', 'servicesRekomendasi')->name('servicesRekomendasi');
     Route::post('order', 'order')->name('order');
     Route::post('status', 'status')->name('status');
     Route::post('refill', 'refill')->name('refill');

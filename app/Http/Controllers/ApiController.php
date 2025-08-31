@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\Encryption;
-use App\Helpers\Smm as HelpersSmm;
 use App\Models\Bot;
-use App\Models\ConfigReferral;
-use App\Models\Favorit;
-use App\Models\History;
-use App\Models\HistoryRefill;
-use App\Models\LogBalance;
-use App\Models\Provider;
-use App\Models\Referral;
 use App\Models\Smm;
 use App\Models\User;
+use App\Models\Favorit;
+use App\Models\History;
+use App\Models\Provider;
+use App\Models\Referral;
+use App\Models\LogBalance;
+use App\Helpers\Encryption;
 use Illuminate\Http\Request;
+use App\Models\HistoryRefill;
+use App\Models\ConfigReferral;
+use App\Helpers\Smm as HelpersSmm;
+use App\Models\LayananRekomendasi;
+use App\Models\KategoriLayananRekomendasi;
 
 class ApiController extends Controller
 {
@@ -159,6 +161,79 @@ class ApiController extends Controller
             ], 403);
         }
     }
+
+    public function servicesRekomendasi(Request $request)
+    {
+        $api = Encryption::encrypt($request->api_key);
+        if (isset($request->api_id) && isset($api)) {
+            $user = User::where([['api_id', $request->api_id], ['api_key', $api]])->first();
+            if ($user) {
+                $ip = $_SERVER['REMOTE_ADDR'];
+                $status = '';
+                if ($user->whitelist_ip == $request->ip()) {
+                    $status = '2';
+                } else if (preg_match("/,/i", $user->whitelist_ip)) {
+                    $explode = explode(",", $user->whitelist_ip);
+                    $count = count($explode);
+                    foreach (range(0, $count - 1) as $num) {
+                        if ($explode[$num] == $ip) {
+                            $status = '1';
+                        } else {
+                            $status = '3';
+                        }
+                    }
+                } else {
+                    $status = '3';
+                }
+                if ($status == '3') {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Unauthorized IP (' . $request->ip()
+                            .
+                            ')',
+                    ], 403);
+                } else {
+                    $layananRekomendasi = LayananRekomendasi::with([
+                        'smm' => function ($query) {
+                            $query->where('status', 'aktif')->orderBy('price', 'asc');
+                        },
+                        'kategori' // tambahin relasi kategori
+                    ])->get();
+
+                    $encs = [];
+
+                    foreach ($layananRekomendasi as $data) {
+                        if (!$data->smm) continue; // skip kalau nggak ada smm aktif
+
+                        $filteredData = $data->smm->toArray();
+
+                        unset($filteredData['provider'], $filteredData['id'], $filteredData['created_at'], $filteredData['updated_at'], $filteredData['status']);
+
+                        // tambahin kategori ke array
+                        $filteredData['kategori_rekomendasi'] = $data->kategori->kategori ?? null;
+
+                        $encs[] = $filteredData;
+                    }
+
+                    return response()->json([
+                        'status' => true,
+                        'data' => $encs,
+                    ], 200);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'data' => 'User Not Found',
+                ], 404);
+            }
+        } else {
+            return response()->json([
+                'status' => false,
+                'data' => 'Api ID & Api harus di isi!'
+            ], 403);
+        }
+    }
+
     public function order(Request $request)
     {
         $api = Encryption::encrypt($request->api_key);
