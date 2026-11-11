@@ -17,6 +17,7 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\CronjobController;
 use App\Http\Controllers\DepositController;
 use App\Http\Controllers\ReferralController;
+use App\Http\Controllers\ResellerController;
 
 
 Route::middleware('guest')->group(function () {
@@ -86,6 +87,8 @@ Route::middleware('guest')->group(function () {
         Route::get('invoice/{order_id}', 'invoice')->name('home.invoice');
     });
 });
+// LP khusus reseller: publik (tamu & user login)
+Route::get('reseller', [ResellerController::class, 'index'])->name('reseller');
 Route::get('dokumentasi-api', [UserController::class, 'dokumentasi'])->name('dokumentasi');
 Route::controller(HomeController::class)->group(function () {
     Route::prefix('sitemap')->group(function () {

@@ -19,6 +19,7 @@ use PragmaRX\Google2FA\Google2FA;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Session\Middleware\StartSession;
 
@@ -200,7 +201,7 @@ class AuthController extends Controller
                 $status = 'active';
             }
             $level = LevelUser::where('default', '1')->first();
-            User::create([
+            $userData = [
                 'name' => $request->full_name,
                 'username' => $request->username,
                 'email' => $request->email,
@@ -217,7 +218,13 @@ class AuthController extends Controller
                 'gender' => $request->gender,
                 'zona' => $request->timezone,
                 'status' => $status,
-            ]);
+            ];
+            // Tandai sumber pendaftar (cookie dari LP /reseller). Dicek hasColumn agar
+            // registrasi tetap jalan walau migrasi kolom `source` belum dijalankan.
+            if ($request->cookie(ResellerController::SOURCE_COOKIE) === ResellerController::SOURCE_VALUE && Schema::hasColumn('users', 'source')) {
+                $userData['source'] = ResellerController::SOURCE_VALUE;
+            }
+            User::create($userData);
 
             if (isset($_COOKIE['referral'])) {
                 $code = $_COOKIE['referral'];
