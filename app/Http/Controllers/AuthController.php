@@ -402,12 +402,17 @@ class AuthController extends Controller
         } else {
             if ($cekuser) {
                 auth()->login($cekuser);
+                // Samakan dengan login password: user ber-2FA wajib verifikasi ulang
+                if ($cekuser->google2fa == '1') {
+                    $cekuser->is_verified = '0';
+                    $cekuser->save();
+                }
                 LogMasuk::create([
                     'user_id' => Auth::user()->id,
                     'ip' => $request->ip(),
                     'user_agent' => $request->header('User-Agent'),
                 ]);
-                return redirect('auth/login');
+                return redirect()->route('order.single');
             } else {
                 return redirect('auth/login')->with('error', 'Email tidak terdaftar');
             }

@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(ProtectSession::class);
         $middleware->append(DefaultTimeZone::class);
+        // User yang sudah login & membuka halaman guest (/, /auth/login, dll.) diarahkan ke order, bukan dashboard
+        $middleware->redirectUsersTo(fn () => route('order.single'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
